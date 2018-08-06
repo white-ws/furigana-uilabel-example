@@ -13,7 +13,7 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        test.attributedText = "{優勝;ゆうしょう}の{懸;か}かった{試合;しあい}。".furigana()
+        test.attributedText = "{動物;どうぶつ}:動物-{園;えん}:園-へ-あし:あし-{毛;け}:毛-を-{見;み}:見る-に-{行;い}き:行く-ます".furigana()
         // Do any additional setup after loading the view, typically from a nib.
     }
 
@@ -25,19 +25,11 @@ class ViewController: UIViewController {
 
 }
 
-class CustomLabel: UILabel, SimpleVerticalGlyphViewProtocol {
-    //override func draw(_ rect: CGRect) { // if not has drawText, use draw UIView etc
+class CustomLabel: UILabel {
     override func drawText(in rect: CGRect) {
         let attributed = NSMutableAttributedString(attributedString: self.attributedText!)
         drawContext(attributed, textDrawRect: rect)
     }
-}
-
-
-protocol SimpleVerticalGlyphViewProtocol {
-}
-
-extension SimpleVerticalGlyphViewProtocol {
     
     func drawContext(_ attributed:NSMutableAttributedString, textDrawRect:CGRect) {
         
@@ -56,27 +48,24 @@ extension SimpleVerticalGlyphViewProtocol {
     }
 }
 
-
 extension String {
     func furigana() -> NSMutableAttributedString {
-        
-        // "｜": ルビを振る対象の文字列を判定し区切る為の記号(全角). ルビを振る文字列の先頭に挿入する
-        // "《》": ルビを振る対象の漢字の直後に挿入しルビを囲う(全角)
-        
-        let attributed =
-            self.replace(pattern: "(\\{.+?;.+?\\})", template: ",$1,")
-                .components(separatedBy: ",")
+        let attributed = self.replace(pattern: ":(.+?)-", template: "-")
+                .components(separatedBy: "-")
                 .map { x -> NSAttributedString in
-                    if let pair = x.find(pattern: "\\{(.+?);(.+?)\\}") {
-                        let string = (x as NSString).substring(with: pair.range(at: 1))
+                    if let pair = x.find(pattern: "\\{(.+?);(.+?)\\}(.*)") {
+                        let kanji = (x as NSString).substring(with: pair.range(at: 1))
                         let ruby = (x as NSString).substring(with: pair.range(at: 2))
+                        let tail = (x as NSString).substring(with: pair.range(at: 3))
                         
                         var text = [.passRetained(ruby as CFString) as Unmanaged<CFString>?, .none, .none, .none]
                         let annotation = CTRubyAnnotationCreate(.auto, .auto, 0.5, &text[0])
                         
-                        return NSAttributedString(
-                            string: string,
+                        let string = NSMutableAttributedString(
+                            string: kanji,
                             attributes: [kCTRubyAnnotationAttributeName as NSAttributedStringKey: annotation])
+                        string.append(NSAttributedString(string: tail, attributes: nil))
+                        return string
                     } else {
                         return NSAttributedString(string: x, attributes: nil)
                     }
